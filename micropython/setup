@@ -1,0 +1,9 @@
+alias esptool='python3 -m esptool --chip esp32 --port /dev/tty.usbserial-0001'
+ 
+esptool erase_flash
+esptool --baud 460800 write_flash -z 0x1000 esp32-ota-20230426-v1.20.0.bin
+ 
+alias ampy='/opt/homebrew/bin/ampy --port /dev/tty.usbserial-0001'
+ 
+ampy put . /
+

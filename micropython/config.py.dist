@@ -1,0 +1,12 @@
+wifi_ssid = "VM5011014"
+wifi_password = "xc8RhzbsLkmm"
+
+mqtt_host = "mqtt.home"
+mqtt_port = 1883
+mqtt_user = None
+mqtt_password = None
+mqtt_topic_url = "epaper/url"
+mqtt_topic_status = "epaper/status"
+mqtt_poll_interval = 10 # seconds between pings and checks
+
+
