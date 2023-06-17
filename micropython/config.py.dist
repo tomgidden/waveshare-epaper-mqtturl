@@ -5,8 +5,8 @@ mqtt_host = "mqtt.home"
 mqtt_port = 1883
 mqtt_user = None
 mqtt_password = None
-mqtt_topic_url = "epaper/url"
-mqtt_topic_status = "epaper/status"
-mqtt_poll_interval = 10 # seconds between pings and checks
+mqtt_client = "epaper1"
+mqtt_topic_prefix = mqtt_client
 
+deepsleep_duration = 3600 * 1000 # milliseconds
 

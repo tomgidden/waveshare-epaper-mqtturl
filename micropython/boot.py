@@ -1,6 +1,4 @@
 import esp
-esp.osdebug(None)
-
 import time
 import network
 
@@ -16,4 +14,7 @@ def do_connect():
     print("Connected")
 
 do_connect()
+
+#import ntptime
+#ntptime.settime()
 
