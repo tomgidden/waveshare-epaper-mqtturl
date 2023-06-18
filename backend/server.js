@@ -11,8 +11,6 @@ const PORT = 18000;
 
 const dims = { width: 800, height: 480 };
 
-
-
 // From https://github.com/andrewstephens75/as-dithered-image/blob/main/ditherworker.js
 function dither(rgba, { width, height }, cutoff) {
     let slidingErrorWindow = [
@@ -60,7 +58,7 @@ function dither(rgba, { width, height }, cutoff) {
 function daysUntil(date, name) {
     const now = new Date();
     const then = new Date(date);
-    const diff = Math.floor((then - now) / (1000 * 60 * 60 * 24));
+    const diff = 1 + Math.floor((then - now) / (1000 * 60 * 60 * 24));
     return `
 <div class="daysUntil">
 <h1>${diff}</h1>
