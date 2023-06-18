@@ -6,9 +6,12 @@ all:
 build: Dockerfile *.js
 	docker build -t $(TAG) .
 
-run:
-	docker run -d --rm --init --cap-add=SYS_ADMIN -p 18000:18000 $(TAG)
+start:
+	docker run -d --rm --init --cap-add=SYS_ADMIN -v ./events.json:/app/events.json -p 18000:18000 --name $(TAG) $(TAG)
 
-clean:
-	docker rmi $(TAG)
+stop:
+	-docker kill $(TAG)
+
+clean: stop
+	-docker rmi $(TAG)
 

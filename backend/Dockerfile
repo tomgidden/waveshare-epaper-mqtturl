@@ -13,8 +13,9 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 WORKDIR /app
 
-COPY *.json .
-RUN npm i sharp puppeteer
+COPY package*.json .
+RUN npm i sharp
+RUN npm i puppeteer
 
 RUN	addgroup pptruser \
 	&& adduser pptruser -D -G pptruser \

@@ -159,7 +159,7 @@ img {
     letter-spacing: -0.02em;
 }
 .daysUntil h2 {
-/*    text-transform: uppercase;*/
+    text-transform: uppercase;
     font-size: 18px;
     margin-top: 9px;
     font-weight: 900;
@@ -223,7 +223,9 @@ async function make(events) {
                         break;
                     }
                     else if ((m = `${req.url}`.match(/\.(png|raw)(.*)/))) {
-                        const events = await fs.promises.readFile('./events.json', 'utf8');
+                        let events = await fs.promises.readFile('./events.json', 'utf8');
+                        events = JSON.parse(events);
+
                         let [output1, output8] = await make(events);
                         switch (m[1]) {
                             case 'png':
