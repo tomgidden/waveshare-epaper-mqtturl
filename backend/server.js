@@ -5,13 +5,9 @@ import sharp from 'sharp';
 import fs from 'node:fs';
 import http from 'http';
 
-import events from './events.js';
-
 const PORT = 18000;
 
 const dims = { width: 800, height: 480 };
-
-
 
 // From https://github.com/andrewstephens75/as-dithered-image/blob/main/ditherworker.js
 function dither(rgba, { width, height }, cutoff) {
@@ -70,10 +66,8 @@ function daysUntil(date, name) {
 `;
 };
 
-function html() {
-
+function html(events) {
     const now = new Date();
-
     let dateString = (new Date(Date.now() + 7200000)).toString().toUpperCase().split(' ');
     dateString = [dateString[0], dateString[2], dateString[1]].join(' ');
 
@@ -165,7 +159,7 @@ img {
     letter-spacing: -0.02em;
 }
 .daysUntil h2 {
-    text-transform: uppercase;
+/*    text-transform: uppercase;*/
     font-size: 18px;
     margin-top: 9px;
     font-weight: 900;
@@ -190,17 +184,16 @@ img {
 `;
 }
 
-async function make() {
+async function make(events) {
     const browser = await puppeteer.launch({ headless: 'new' });
 
     const page = await browser.newPage();
-    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
 
     //    await page.goto('http://192.168.0.38:8000/test2.png');
 
     await page.setViewport(dims);
 
-    await page.setContent(html());
+    await page.setContent(html(events));
 
     await page.waitForNetworkIdle();
 
@@ -230,7 +223,8 @@ async function make() {
                         break;
                     }
                     else if ((m = `${req.url}`.match(/\.(png|raw)(.*)/))) {
-                        let [output1, output8] = await make();
+                        const events = await fs.promises.readFile('./events.json', 'utf8');
+                        let [output1, output8] = await make(events);
                         switch (m[1]) {
                             case 'png':
                                 const buf = await sharp(output8, {
