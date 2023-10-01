@@ -8,6 +8,7 @@ import http from 'http';
 const PORT = 18000;
 
 const dims = { width: 800, height: 480 };
+const photo_url = 'http://192.168.0.32:18000/photo.jpg';
 
 // From https://github.com/andrewstephens75/as-dithered-image/blob/main/ditherworker.js
 function dither(rgba, { width, height }, cutoff) {
@@ -60,7 +61,7 @@ function daysUntil(date, name) {
     return `
 <div class="daysUntil">
 <h1>${diff}</h1>
-<h3>days until</h3>
+<h3>day${diff==1 ? '' : 's'} until</h3>
 <h2>${name}</h2>
 </div>
 `;
@@ -70,7 +71,6 @@ function html(events) {
     const now = new Date();
     let dateString = (new Date(Date.now() + 7200000)).toString().toUpperCase().split(' ');
     dateString = [dateString[0], dateString[2], dateString[1]].join(' ');
-
     const els =
         events
             .map(([date, name]) => [new Date(date), name])
@@ -114,18 +114,27 @@ html, body {
     align-items: start;
 }
 img {
-    max-width: 60%;
+    max-width: 50%;
     box-shadow: 3px 3px 6px #eee;
     border-radius: 6px;
 }
 #left {
-    width: 100%;
+    width: 50vw;
     height: 480px;
-    background-image: url(http://192.168.0.35:18000/photo.jpg);
+    background-image: url(${photo_url});
     background-position-x: -100px;
     display: flex;
     flex-direction: column-reverse;
     align-items: center;
+}
+#debug { 
+    position: absolute;
+    top: -4px;
+    right: 0;
+    color: black;
+    font-family: 'Roboto Condensed', sans-serif;
+    font-size: 18px;
+    font-weight:bold;
 }
 #left h1 {
     font-family: 'Roboto Condensed', sans-serif;
@@ -134,6 +143,7 @@ img {
     text-shadow: 0 0 10px black, 0 0 10px black, 0 0 10px black, 0 0 10px black, 0 0 10px black, 0 0 10px black
 }
 #right {
+    width: 50vw;
     height: 480px;
     border-left: 1px solid black;
     font-family: 'Roboto Condensed', sans-serif;
@@ -147,7 +157,7 @@ img {
 /*    justify-content: space-between;*/
     align-items: center;
     background: #fff;
-    margin: 0 1em; 
+    margin: 0 0.25em;
 }
 .daysUntil h1, .daysUntil h2, .daysUntil h3 {
     text-align: center;
@@ -155,18 +165,18 @@ img {
 }
 
 .daysUntil h1 {
-    font-size: 80px;
+    font-size: 70px;
     letter-spacing: -0.02em;
 }
 .daysUntil h2 {
     text-transform: uppercase;
-    font-size: 18px;
-    margin-top: 9px;
+    font-size: 17px;
+    margin-top: 5px;
     font-weight: 900;
 }
 .daysUntil h3 {
-    margin-top: -18px;
-    font-size: 14px;
+    margin-top: -15px;
+    font-size: 12px;
 }
             </style>
         </head>
@@ -176,6 +186,7 @@ img {
             <h1>${dateString}</h1>
             </div>
             <div id="right">
+<div id="debug">${((new Date()).toLocaleString().toUpperCase().split(' '))[4]}</div>
                 ${els}
             </div>
         </div>
@@ -184,7 +195,7 @@ img {
 `;
 }
 
-async function make(events) {
+async function make(html) {
     const browser = await puppeteer.launch({ headless: 'new' });
 
     const page = await browser.newPage();
@@ -193,7 +204,7 @@ async function make(events) {
 
     await page.setViewport(dims);
 
-    await page.setContent(html(events));
+    await page.setContent(html);
 
     await page.waitForNetworkIdle();
 
@@ -216,28 +227,30 @@ async function make(events) {
                 case 'get':
                     let m;
 
-                    if ((m = `${req.url}`.match(/\.(html)(.*)/))) {
-                        res.writeHead(200, { 'Content-Type': 'text/html' });
-                        res.write(html());
-                        res.end('');
-                        break;
-                    }
-                    else if ((m = `${req.url}`.match(/\.(png|raw)(.*)/))) {
-                        let events = await fs.promises.readFile('./events.json', 'utf8');
+                    if ((m = `${req.url}`.match(/\.(png|raw|html)(.*)/))) {
+                        var events = await fs.promises.readFile('./events.json', 'utf8');
                         events = JSON.parse(events);
 
-                        let [output1, output8] = await make(events);
                         switch (m[1]) {
+                            case 'html':
+                                res.writeHead(200, { 'Content-Type': 'text/html' });
+                                res.write(html(events));
+                                res.end('');
+                                break;
+
                             case 'png':
+                                var [output1, output8] = await make(html(events));
                                 const buf = await sharp(output8, {
                                     raw: { width: dims.width, height: dims.height, channels: 1 }
                                 }).png().toBuffer();
+
                                 res.writeHead(200, { 'Content-Type': 'image/png' });
                                 res.write(buf);
                                 res.end('');
                                 break;
 
                             case 'raw':
+                                var [output1, output8] = await make(html(events));
                                 res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
                                 res.write(output1);
                                 res.end('');
@@ -249,7 +262,7 @@ async function make(events) {
                     }
                     else if ((m = `${req.url}`.match(/\/(\w+).jpg/))) {
                         const fn = `./${m[1]}.jpg`;
-                        if (! fs.existsSync(fn)) 
+                        if (! fs.existsSync(fn))
                             throw new Error('404 Not Found');
 
                         res.writeHead(200, { 'Content-Type': 'image/jpeg' });

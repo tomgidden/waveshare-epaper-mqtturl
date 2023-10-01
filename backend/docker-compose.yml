@@ -1,0 +1,15 @@
+version: '3'
+services:
+  waveshare_epaper_backend:
+    container_name: waveshare_epaper_backend
+    image: tomgidden/waveshare-epaper-backend:latest
+    environment:
+      - TZ=Europe/London
+    cap_add:
+      - SYS_ADMIN
+    ports:
+      - 18000:18000
+    volumes:
+      - /data/waveshare-epaper-mqtturl/backend/events.json:/app/events.json
+#      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
