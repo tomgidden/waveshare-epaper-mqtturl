@@ -132,9 +132,20 @@ function getTimetableEls(timetable) {
     const title = `<div class="timetable-date">${dayString}</div>`;
 
     const lessons = tts
-        .map(tt => `<div class="timetable-item">
+        .map(tt => {
+            tt.end = undefined;
+            tt.until = '';
+            if (tt.duration) {
+                tt.end = new Date(tt.ts);
+                tt.end.setMinutes(tt.end.getMinutes() + tt.duration);
+                tt.until = `[${tt.end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}]`;
+                tt.until = `<span class="until">${tt.until}</span>`;
+            }
+            return tt;
+        })
+        .map(tt => `<div class="timetable-lesson">
 <div class="timetable-period">
-${tt.time}: <span class="${(tt.replacement || tt.kit || tt.p === '+') ? 'bold' : ''}">${tt.p} ${tt.name}</span>
+${tt.time}: <span class="${(tt.replacement || tt.kit || tt.p === '+') ? 'bold' : ''}">${tt.p} ${tt.name} ${tt.until}</span>
 </div>
 </div>`);
 
@@ -261,6 +272,14 @@ img {
 .timetable-lessons .bold {
     font-weight: bold;
 }
+
+.timetable-lessons  .until {
+    display: none;
+}
+.timetable-lessons  .until:last-child {
+        display: inline;
+}
+
 .timetable-head {
     grid-area: head;
 }
