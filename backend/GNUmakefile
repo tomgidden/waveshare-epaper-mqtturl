@@ -1,14 +1,26 @@
-TAG=waveshare-epaper-backend
-
+TAG=tomgidden/waveshare-epaper-backend
 
 all:
 
 build: Dockerfile *.js
 	docker build -t $(TAG) .
 
-run:
-	docker run -d --rm --init --cap-add=SYS_ADMIN -p 18000:18000 $(TAG)
+start:
+	docker run -d --rm --init --cap-add=SYS_ADMIN -v ./events.json:/app/events.json -p 18000:18000 --name $(TAG) $(TAG)
 
-clean:
-	docker rmi $(TAG)
+stop:
+	-docker kill $(TAG)
+
+clean: stop
+	-docker rmi $(TAG)
+
+log:
+logs:
+tail:
+	docker logs -f $(TAG)
+
+test:
+	mosquitto_pub -h 192.168.0.2 -t epaper1/url -m http://hass.home:18000/epaper1-`date +"%s%N"`.raw -r
+	mosquitto_pub -h 192.168.0.2 -t epaper2/url -m http://hass.home:18000/epaper2-`date +"%s%N"`.raw -r
+
 
