@@ -6,6 +6,10 @@ import fs from 'node:fs';
 import http from 'http';
 
 const PORT = 18000;
+const slew = 0;
+
+const _now = new Date();
+if (slew) _now.setDate(_now.getDate() + slew);
 
 const dims = { width: 800, height: 480 };
 const photo_url = 'http://192.168.0.32:18000/photo.jpg';
@@ -55,34 +59,119 @@ function dither(rgba, { width, height }, cutoff) {
 
 
 function daysUntil(date, name) {
-    const now = new Date();
+    const now = new Date(_now);
     const then = new Date(date);
     const diff = 1 + Math.floor((then - now) / (1000 * 60 * 60 * 24));
     return `
 <div class="daysUntil">
 <h1>${diff}</h1>
-<h3>day${diff==1 ? '' : 's'} until</h3>
+<h3>day${diff == 1 ? '' : 's'} until</h3>
 <h2>${name}</h2>
 </div>
 `;
 };
 
-function html(events) {
-    const now = new Date();
-    let dateString = (new Date(Date.now() + 7200000)).toString().toUpperCase().split(' ');
+function getNextTimetableDay(timetable) {
+    let now = new Date(_now);
+    now.setDate(now.getDate() + slew);
+    let today = new Date(now);
+    today.setHours(2);
+
+    timetable = timetable
+        .filter(tt => tt.ts >= today)
+        .sort((a, b) =>
+            (a.yyyymmdd.localeCompare(b.yyyymmdd)) ||
+            (a.time.localeCompare(b.time)) ||
+            (a.p.localeCompare(b.p))
+        );
+
+    if (timetable.length == 0) return [];
+    console.log(now);
+
+    if (now.getHours() >= 12) {
+        if (timetable[0].ts < now) {
+            now.setDate(now.getDate() + 1);
+            today.setDate(today.getDate() + 1);
+            timetable = timetable.filter(tt => tt.ts >= today);
+        }
+    }
+
+    if (timetable.length == 0) return [];
+
+    const tt = timetable
+        .filter(tt => tt.yyyymmdd == timetable?.[0]?.yyyymmdd)
+
+    return tt;
+}
+
+function getTimetableEls(timetable) {
+    const tts = getNextTimetableDay(timetable);
+
+    if (tts.length == 0) return undefined;
+
+    const now = new Date(_now);
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const then = new Date(tts[0].ts);
+
+    let dayString;
+    // If now and then are on the same day
+    if (now.getFullYear() == then.getFullYear() &&
+        now.getMonth() == then.getMonth() &&
+        now.getDate() == then.getDate()) {
+        dayString = 'Today';
+    }
+    else if (tomorrow.getFullYear() == then.getFullYear() &&
+        tomorrow.getMonth() == then.getMonth() &&
+        tomorrow.getDate() == then.getDate()) {
+        dayString = 'Tomorrow';
+    }
+    else {
+        dayString = then.toLocaleDateString('en-GB', { weekday: 'long' });
+    }
+
+    const title = `<div class="timetable-date">${dayString}</div>`;
+
+    const lessons = tts
+        .map(tt => `<div class="timetable-item">
+<div class="timetable-period">
+${tt.time}: <span class="${(tt.replacement || tt.kit || tt.p === '+') ? 'bold' : ''}">${tt.p} ${tt.name}</span>
+</div>
+</div>`);
+
+    if (lessons.length == 0) return undefined;
+
+    let notes = [];
+
+    if (tts.filter(tt => (tt.kit || tt.p === '+') && tt.name !== 'Scouts').length > 0)
+        notes.push(`<div class="timetable-note"><div>KIT</div></div>`);
+    if (tts.filter(tt => tt.replacement).length > 0)
+        notes.push(`<div class="timetable-note"><div>EXTRA</div></div>`);
+
+    return { lessons, notes, title };
+}
+
+function html(data) {
+    const now = new Date(_now);
+    let dateString = (new Date(now.getTime() + 7200000)).toString().toUpperCase().split(' ');
     dateString = [dateString[0], dateString[2], dateString[1]].join(' ');
 
-    if ('string' === typeof events)
-        events = JSON.parse(events);
-    
-    const els =
-        events
-            .map(([date, name]) => [new Date(date), name])
-            .filter(([date, name]) => date >= now)
-            .sort(([ad, an], [bd, bn]) => ad - bd)
-            .map(([date, name]) => daysUntil(date, name))
-            .join('\n');
+    const events = data.events
+        .map(([date, name]) => [new Date(date), name])
+        .filter(([date, name]) => date >= now)
+        .sort(([ad, an], [bd, bn]) => ad - bd)
+        .map(([date, name]) => daysUntil(date, name));
 
+    const _timetable = getTimetableEls(data.timetable);
+    let timetable = undefined;
+    if (_timetable) {
+        const { lessons, notes, title } = _timetable;
+        timetable = [
+            `<div class="timetable-lessons">${lessons.join("\n")}</div>`,
+            `<div class="timetable-head">${title}</div>`,
+            `<div class="timetable-notes">${notes.join("\n")}</div>`
+        ];
+    }
 
     return `
 <!DOCTYPE html>
@@ -91,13 +180,11 @@ function html(events) {
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <style>
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;700;900&display=swap');
-* {
-    font-family: 'Roboto Condensed', sans-serif;
-    -webkit-font-smoothing: none;
-}
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;700;900&display=swap');
 
 html, body {
+    font-family: 'Roboto Condensed', 'Roboto', sans-serif;
     width: 800px;
     height: 480px;
     margin: 0;
@@ -152,6 +239,59 @@ img {
     border-left: 1px solid black;
     font-family: 'Roboto Condensed', sans-serif;
     background: white;
+}
+.hidden { display: none; }
+
+#timetable {
+    display: grid;
+    grid-template-areas: "head lessons" "notes lessons";
+/*    grid-template-columns: repeat(2, 1fr);*/
+/*    display: flex;*/
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-bottom: 1px solid black;
+}
+.timetable-lessons {
+    font-family: 'Roboto', sans-serif;
+    font-size: 18px;
+    overflow: hidden;
+    text-wrap: nowrap;
+    grid-area: lessons;
+}
+.timetable-lessons .bold {
+    font-weight: bold;
+}
+.timetable-head {
+    grid-area: head;
+}
+.timetable-date {
+    padding:0;
+    font-size: 36px;
+    margin-top: -6px;
+    padding-right: 0.5rem;
+}
+
+.timetable-notes {
+    grid-area: notes;
+/*    justify-self: end; */
+    align-self: end;
+    display: flex;
+    flex-direction: column;
+}
+
+.timetable-note div {
+    display: inline-block;
+    font-size: 36px;
+    background: black;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    margin: 0.25rem;
+}
+.timetable-note {
+}
+
+#events {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
 }
@@ -190,8 +330,10 @@ img {
             <h1>${dateString}</h1>
             </div>
             <div id="right">
-<div id="debug">${((new Date()).toLocaleString().toUpperCase().split(' '))[4]}</div>
-                ${els}
+                ${timetable === undefined ? '<div class="hidden">' : ''}
+                <div id="timetable">${(timetable ?? []).join("\n")}</div>
+                ${timetable === undefined ? '</div>' : ''}
+                <div id="events">${events.join("\n")}</div>
             </div>
         </div>
     </body>
@@ -224,7 +366,30 @@ async function make(html) {
     return dither(buffer, dims, .25);
 }
 
+async function getData() {
+    var events = await fs.promises.readFile('./events.json', 'utf8');
+    events = JSON.parse(events);
+    events = events.filter(([date, name, skip]) => new Date(date) >= _now && skip !== true);
+
+    var timetable = await fs.promises.readFile('./timetable.json', 'utf8');
+    timetable = JSON.parse(timetable)
+        .map(tt => ({ ...tt, ts: new Date(tt.ts) }));
+
+
+    var homework = await fs.promises.readFile('./homework.json', 'utf8');
+    homework = JSON.parse(homework);
+
+    return {
+        events,
+        timetable,
+        homework
+    };
+}
+
 (async () => {
+    const data = await getData();
+    console.log(getNextTimetableDay(data.timetable));
+
     http.createServer(async (req, res) => {
         try {
             switch (req.method.toLowerCase()) {
@@ -232,18 +397,17 @@ async function make(html) {
                     let m;
 
                     if ((m = `${req.url}`.match(/\.(png|raw|html)(.*)/))) {
-                        var events = await fs.promises.readFile('./events.json', 'utf8');
-                        events = JSON.parse(events);
+                        const data = await getData();
 
                         switch (m[1]) {
                             case 'html':
                                 res.writeHead(200, { 'Content-Type': 'text/html' });
-                                res.write(html(events));
+                                res.write(html(data));
                                 res.end('');
                                 break;
 
                             case 'png':
-                                var [output1, output8] = await make(html(events));
+                                var [output1, output8] = await make(html(data));
                                 const buf = await sharp(output8, {
                                     raw: { width: dims.width, height: dims.height, channels: 1 }
                                 }).png().toBuffer();
@@ -254,7 +418,7 @@ async function make(html) {
                                 break;
 
                             case 'raw':
-                                var [output1, output8] = await make(html(events));
+                                var [output1, output8] = await make(html(data));
                                 res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
                                 res.write(output1);
                                 res.end('');
@@ -266,7 +430,7 @@ async function make(html) {
                     }
                     else if ((m = `${req.url}`.match(/\/(\w+).jpg/))) {
                         const fn = `./${m[1]}.jpg`;
-                        if (! fs.existsSync(fn))
+                        if (!fs.existsSync(fn))
                             throw new Error('404 Not Found');
 
                         res.writeHead(200, { 'Content-Type': 'image/jpeg' });
