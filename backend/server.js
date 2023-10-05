@@ -71,6 +71,9 @@ function html(events) {
     let dateString = (new Date(Date.now() + 7200000)).toString().toUpperCase().split(' ');
     dateString = [dateString[0], dateString[2], dateString[1]].join(' ');
 
+    if ('string' === typeof events)
+        events = JSON.parse(events);
+    
     const els =
         events
             .map(([date, name]) => [new Date(date), name])
@@ -217,8 +220,9 @@ async function make(events) {
                     let m;
 
                     if ((m = `${req.url}`.match(/\.(html)(.*)/))) {
+                        const events = await fs.promises.readFile('./events.json', 'utf8');
                         res.writeHead(200, { 'Content-Type': 'text/html' });
-                        res.write(html());
+                        res.write(html(events));
                         res.end('');
                         break;
                     }
