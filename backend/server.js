@@ -86,7 +86,6 @@ function getNextTimetableDay(timetable) {
         );
 
     if (timetable.length == 0) return [];
-    console.log(now);
 
     if (now.getHours() >= 12) {
         if (timetable[0].ts < now) {
@@ -388,7 +387,6 @@ async function getData() {
 
 (async () => {
     const data = await getData();
-    console.log(getNextTimetableDay(data.timetable));
 
     http.createServer(async (req, res) => {
         try {
