@@ -4,15 +4,22 @@ import puppeteer from 'puppeteer';
 import sharp from 'sharp';
 import fs from 'node:fs';
 import http from 'http';
+import config from './config.js';
 
-const PORT = 18000;
-const slew = 0;
+const port = config.port ?? 18000;
+const slew = config.slew ?? 0;
 
 const _now = new Date();
 if (slew) _now.setDate(_now.getDate() + slew);
 
+const eventsPath = config.eventsPath ?? `./var/events.json`;
+const timetablePath = config.timetablePath ?? `./schoolscrape/timetable.json`;
+const homeworkPath = config.homeworkPath ?? `./schoolscrape/homework.json`;
+
+const photoUrl = config.photoUrl ?? 'http://192.168.0.32:18000/photo.jpg';
+
+
 const dims = { width: 800, height: 480 };
-const photo_url = 'http://192.168.0.32:18000/photo.jpg';
 
 // From https://github.com/andrewstephens75/as-dithered-image/blob/main/ditherworker.js
 function dither(rgba, { width, height }, cutoff) {
@@ -153,7 +160,7 @@ ${tt.time}: <span class="${(tt.replacement || tt.kit || tt.p === '+') ? 'bold' :
 
     let notes = [];
 
-    if (tts.filter(tt => (tt.kit || tt.p === '+') && tt.name !== 'Scouts').length > 0)
+    if (tts.filter(tt => (tt.kit) && tt.name !== 'Scouts').length > 0)
         notes.push(`<div class="timetable-note"><div>KIT</div></div>`);
     if (tts.filter(tt => tt.replacement).length > 0)
         notes.push(`<div class="timetable-note"><div>EXTRA</div></div>`);
@@ -222,7 +229,7 @@ img {
 #left {
     width: 50vw;
     height: 480px;
-    background-image: url(${photo_url});
+    background-image: url(${photoUrl});
     background-position-x: -100px;
     display: flex;
     flex-direction: column-reverse;
@@ -385,16 +392,15 @@ async function make(html) {
 }
 
 async function getData() {
-    var events = await fs.promises.readFile('./events.json', 'utf8');
+    var events = await fs.promises.readFile(eventsPath, 'utf8');
     events = JSON.parse(events);
     events = events.filter(([date, name, skip]) => new Date(date) >= _now && skip !== true);
 
-    var timetable = await fs.promises.readFile('./timetable.json', 'utf8');
+    var timetable = await fs.promises.readFile(timetablePath, 'utf8');
     timetable = JSON.parse(timetable)
         .map(tt => ({ ...tt, ts: new Date(tt.ts) }));
 
-
-    var homework = await fs.promises.readFile('./homework.json', 'utf8');
+    var homework = await fs.promises.readFile(homeworkPath, 'utf8');
     homework = JSON.parse(homework);
 
     return {
@@ -472,5 +478,5 @@ async function getData() {
             res.write(e.message);
             res.end('');
         }
-    }).listen(PORT);
+    }).listen(port);
 })();

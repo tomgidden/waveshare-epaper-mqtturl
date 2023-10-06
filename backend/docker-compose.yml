@@ -10,8 +10,7 @@ services:
     ports:
       - 18000:18000
     volumes:
-      - /data/waveshare-epaper-mqtturl/backend/events.json:/app/events.json
-      - /nfs/miniprojects/schoolscrape/timetable.json:/app/timetable.json
-      - /nfs/miniprojects/schoolscrape/homework.json:/app/homework.json
+      - /data/waveshare-epaper-mqtturl/backend/var:/app/var
+      - /nfs/miniprojects/schoolscrape:/app/schoolscrape
 #      - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped

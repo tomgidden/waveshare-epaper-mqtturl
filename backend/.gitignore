@@ -1,2 +1,3 @@
-events.json
+config.js
+var/events.json
 node_modules
