@@ -11,6 +11,6 @@ services:
       - 18000:18000
     volumes:
       - /data/waveshare-epaper-mqtturl/backend/var:/app/var
-      - /nfs/miniprojects/schoolscrape:/app/schoolscrape
+      - /nfs/miniprojects/schoolscrape/var:/app/schoolscrape
 #      - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped

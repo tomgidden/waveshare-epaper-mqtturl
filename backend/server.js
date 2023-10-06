@@ -11,10 +11,11 @@ const slew = config.slew ?? 0;
 
 const _now = new Date();
 if (slew) _now.setDate(_now.getDate() + slew);
+const yyyymmdd = _now.toISOString().split('T')[0];
 
-const eventsPath = config.eventsPath ?? `./var/events.json`;
-const timetablePath = config.timetablePath ?? `./schoolscrape/timetable.json`;
-const homeworkPath = config.homeworkPath ?? `./schoolscrape/homework.json`;
+const eventsPath = config.eventsPath ?? `./var/events`;//.json
+const timetablePath = config.timetablePath ?? `./schoolscrape/timetable`;//.yyyy-mm-dd.json
+const homeworkPath = config.homeworkPath ?? `./schoolscrape/homework`;//.yyyy-mm-dd.json
 
 const photoUrl = config.photoUrl ?? 'http://192.168.0.32:18000/photo.jpg';
 
@@ -392,15 +393,15 @@ async function make(html) {
 }
 
 async function getData() {
-    var events = await fs.promises.readFile(eventsPath, 'utf8');
+    var events = await fs.promises.readFile(`${eventsPath}.json`, 'utf8');
     events = JSON.parse(events);
     events = events.filter(([date, name, skip]) => new Date(date) >= _now && skip !== true);
 
-    var timetable = await fs.promises.readFile(timetablePath, 'utf8');
+    var timetable = await fs.promises.readFile(`${timetablePath}.${yyyymmdd}.json`, 'utf8');
     timetable = JSON.parse(timetable)
         .map(tt => ({ ...tt, ts: new Date(tt.ts) }));
 
-    var homework = await fs.promises.readFile(homeworkPath, 'utf8');
+    var homework = await fs.promises.readFile(`${homeworkPath}.${yyyymmdd}.json`, 'utf8');
     homework = JSON.parse(homework);
 
     return {
