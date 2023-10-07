@@ -17,7 +17,7 @@ const eventsPath = config.eventsPath ?? `./var/events`;//.json
 const timetablePath = config.timetablePath ?? `./schoolscrape/timetable`;//.yyyy-mm-dd.json
 const homeworkPath = config.homeworkPath ?? `./schoolscrape/homework`;//.yyyy-mm-dd.json
 
-const photoUrl = config.photoUrl ?? 'http://192.168.0.32:18000/photo.jpg';
+const photoUrl = config.photoUrl ?? '/static/photo.jpg';
 
 
 const dims = { width: 800, height: 480 };
@@ -172,7 +172,7 @@ ${tt.time}: <span class="${(tt.replacement || tt.kit || tt.p === '+') ? 'bold' :
 function html(data) {
     const now = new Date(_now);
     let dateString = (new Date(now.getTime() + 7200000)).toString().toUpperCase().split(' ');
-    dateString = [dateString[0], dateString[2], dateString[1]].join(' ');
+    dateString = [dateString[0], parseInt(dateString[2]), dateString[1]].join(' ');
 
     const events = data.events
         .map(([date, name]) => [new Date(date), name])
@@ -198,7 +198,17 @@ function html(data) {
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <style>
-${fs.readFileSync('./style.css', 'utf8')}
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;700;900&display=swap');
+
+${fs.readFileSync('./static/style.css', 'utf8')}
+
+#left {
+    background-image: url(${photoUrl});
+    background-position-x: -100px;
+}
+
         </style>
         </head>
     <body>
@@ -270,8 +280,29 @@ async function getData() {
             switch (req.method.toLowerCase()) {
                 case 'get':
                     let m;
+                    console.log(`${req.method} ${req.url}`);
 
-                    if ((m = `${req.url}`.match(/\.(png|raw|html)(.*)/))) {
+                    if ((m = `${req.url}`.match(/\/static\/(\w+).(\w+)/))) {
+                        const fn = `./${req.url}`;
+                        if (!(fs.existsSync(fn)))
+                            throw new Error('404 Not Found');
+
+                        const type = {
+                            'png': 'image/png',
+                            'css': 'text/css',
+                            'js': 'text/javascript',
+                            'jpg': 'image/jpeg'
+                        }[m[2]] ?? 'application/octet-stream';
+
+                        const s = fs.createReadStream(fn);
+                        res.writeHead(200, { 'Content-Type': type });
+
+                        s
+                            .on('end', () => { res.end(''); })
+                            .on('open', () => { s.pipe(res); });
+                    }
+
+                    else if ((m = `${req.url}`.match(/\.(png|raw|html)(.*)/))) {
                         const data = await getData();
 
                         switch (m[1]) {
@@ -302,16 +333,6 @@ async function getData() {
                             default:
                                 throw new Error('404 Not Found');
                         }
-                    }
-                    else if ((m = `${req.url}`.match(/\/(\w+).jpg/))) {
-                        const fn = `./${m[1]}.jpg`;
-                        if (!fs.existsSync(fn))
-                            throw new Error('404 Not Found');
-
-                        res.writeHead(200, { 'Content-Type': 'image/jpeg' });
-                        res.write(await fs.promises.readFile(fn));
-                        res.end('');
-                        break;
                     }
                     else {
                         throw new Error('404 Not Found');
