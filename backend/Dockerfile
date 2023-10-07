@@ -25,8 +25,7 @@ RUN	addgroup pptruser \
 
 USER pptruser
 
-COPY *.jpg .
-COPY *.css .
+COPY static ./static
 COPY *.js .
 
 EXPOSE 18000

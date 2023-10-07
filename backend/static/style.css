@@ -34,8 +34,6 @@ img {
 #left {
     width: 50vw;
     height: 480px;
-    background-image: url(${photoUrl});
-    background-position-x: -100px;
     display: flex;
     flex-direction: column-reverse;
     align-items: center;
