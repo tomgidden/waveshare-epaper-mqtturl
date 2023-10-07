@@ -48,6 +48,9 @@ function dither(rgba, { width, height }, cutoff) {
                     slidingErrorWindow[offsets[q][1]][offsetX] += error;
             }
 
+            if (x >= width/2)
+                monoValue = input > 120 ? 255 : 0;
+
             output1[j] = (output1[j] << 1) | !!monoValue;
             if ((i % 8) === 7)
                 output1[++j] = 0;
@@ -203,10 +206,13 @@ function html(data) {
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;700;900&display=swap');
 
 ${fs.readFileSync('./static/style.css', 'utf8')}
+* {
+    -webkit-font-smoothing: none;
+    font-smooth: never;
+}
 
 #left {
     background-image: url(${photoUrl});
-    background-position-x: -100px;
 }
 
         </style>
@@ -233,11 +239,9 @@ async function make(html) {
 
     const page = await browser.newPage();
 
-    //    await page.goto('http://192.168.0.38:8000/test2.png');
-
     await page.setViewport(dims);
 
-    await page.setContent(html);
+    await page.goto('http://localhost:18000/output.html');
 
     await page.waitForNetworkIdle();
 
