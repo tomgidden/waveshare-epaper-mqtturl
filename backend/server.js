@@ -137,10 +137,10 @@ function getTimetableEls(timetable) {
         dayString = 'Tomorrow';
     }
     else {
-        dayString = then.toLocaleDateString('en-GB', { weekday: 'long' });
+        dayString = `Next ${then.toLocaleDateString('en-GB', { weekday: 'long' })}`;
     }
 
-    const title = `<div class="timetable-date">${dayString}</div>`;
+    const title = `<div class="timetable-date">${dayString}:</div>`;
 
     const lessons = tts
         .map(tt => {
