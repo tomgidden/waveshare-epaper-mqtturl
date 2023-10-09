@@ -9,9 +9,8 @@ import config from './config.js';
 const port = config.port ?? 18000;
 const slew = config.slew ?? 0;
 
-const _now = new Date();
-if (slew) _now.setDate(_now.getDate() + slew);
-const yyyymmdd = _now.toISOString().split('T')[0];
+var _now, yyyymmdd;
+
 
 const eventsPath = config.eventsPath ?? `./var/events`;//.json
 const timetablePath = config.timetablePath ?? `./schoolscrape/timetable`;//.yyyy-mm-dd.json
@@ -48,7 +47,7 @@ function dither(rgba, { width, height }, cutoff) {
                     slidingErrorWindow[offsets[q][1]][offsetX] += error;
             }
 
-            if (x >= width/2)
+            if (x >= width / 2)
                 monoValue = input > 120 ? 255 : 0;
 
             output1[j] = (output1[j] << 1) | !!monoValue;
@@ -137,10 +136,10 @@ function getTimetableEls(timetable) {
         dayString = 'Tomorrow';
     }
     else {
-        dayString = `Next ${then.toLocaleDateString('en-GB', { weekday: 'long' })}`;
+        dayString = then.toLocaleDateString('en-GB', { weekday: 'long' });
     }
 
-    const title = `<div class="timetable-date">${dayString}:</div>`;
+    const title = `<div class="timetable-date">${dayString}</div>`;
 
     const lessons = tts
         .map(tt => {
@@ -280,6 +279,10 @@ async function getData() {
     const data = await getData();
 
     http.createServer(async (req, res) => {
+        _now = new Date();
+        if (slew) _now.setDate(_now.getDate() + slew);
+        yyyymmdd = _now.toISOString().split('T')[0];
+
         try {
             switch (req.method.toLowerCase()) {
                 case 'get':
