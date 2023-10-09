@@ -276,12 +276,13 @@ async function getData() {
 }
 
 (async () => {
-    const data = await getData();
 
     http.createServer(async (req, res) => {
         _now = new Date();
         if (slew) _now.setDate(_now.getDate() + slew);
         yyyymmdd = _now.toISOString().split('T')[0];
+
+        const data = await getData();
 
         try {
             switch (req.method.toLowerCase()) {
